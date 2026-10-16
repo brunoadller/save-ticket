@@ -1,0 +1,90 @@
+// Schema Prisma — Sistema de Gestão de Chamados dos Polos
+// Banco: PostgreSQL (Neon)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MEMBRO
+}
+
+enum Polo {
+  PELOTAS_I
+  PELOTAS_II
+  PELOTAS_III
+}
+
+enum TicketStatus {
+  ANDAMENTO
+  CONCLUIDO
+  EXPIRADO
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(MEMBRO)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tickets      Ticket[]
+  tasks        Task[]
+
+  @@map("users")
+}
+
+model Ticket {
+  id             String       @id @default(uuid())
+  protocolo      String
+  polo           Polo
+  nomeAluno      String
+  cpf            String
+  ra             String       @default("")
+  curso          String       @default("")
+  situacaoAtual  String       @default("")
+  justificativa  String       @default("") @db.Text
+  status         TicketStatus @default(ANDAMENTO)
+  dataCriacao    DateTime     @default(now())
+  dataPrazo      DateTime
+  dataConclusao  DateTime?
+
+  createdBy      User         @relation(fields: [userId], references: [id])
+  userId         String
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@map("tickets")
+}
+
+// Tarefas do calendário (compartilhadas pela equipe). "data" é só o dia (sem horário).
+model Task {
+  id          String    @id @default(uuid())
+  titulo      String
+  descricao   String    @default("") @db.Text
+  data        DateTime  @db.Date
+  concluida   Boolean   @default(false)
+  concluidaEm DateTime?
+
+  createdBy   User      @relation(fields: [userId], references: [id])
+  userId      String
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([data])
+  @@index([userId])
+  @@map("tasks")
+}
