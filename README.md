@@ -79,20 +79,25 @@ Crie um repositório e envie as pastas `server/` e `client/` (pode ser um monore
 1. Crie uma conta em [render.com](https://render.com) e clique em **New → Web Service**, apontando para o repositório.
 2. Configurações do serviço:
    - **Root Directory**: `server`
-   - **Build Command**: `npm install && npx prisma generate && npm run build`
+   - **Build Command**: `npm install && npx prisma generate && npm run build`  (o `build` agora é só `tsc`)
    - **Start Command**: `npx prisma migrate deploy && npm start`
 3. Em **Environment**, adicione as mesmas variáveis do `.env` (`DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `CORS_ORIGIN` — depois de criar o site no Vercel, volte aqui e coloque a URL dele).
-4. Depois do primeiro deploy, rode o seed uma única vez (Render → aba **Shell** do serviço): `npm run seed`.
+4. O usuário admin: o **Shell** do Render não existe no plano gratuito, então rode o seed no seu computador, apontando o `.env` para o mesmo banco do Neon (`npm run seed`). Se você já rodou localmente com esse banco, o admin já existe.
 5. Anote a URL pública gerada (algo como `https://chamados-api.onrender.com`).
 
 > No plano gratuito do Render, o serviço "dorme" após um tempo sem uso e demora alguns segundos para acordar na primeira requisição — normal e sem custo.
 
 ### 2.3 Frontend no Vercel
+> O plano Hobby do Vercel é só para uso pessoal/não comercial. Se o painel for usado no trabalho, prefira Cloudflare Pages ou Netlify (mesmas configurações: root `client`, build `npm run build`, saída `dist`, variável `VITE_API_URL`). O arquivo `client/public/_redirects` e o `client/vercel.json` já fazem as rotas (/calendario etc.) funcionarem ao atualizar a página.
+
 1. Crie uma conta em [vercel.com](https://vercel.com) e importe o mesmo repositório.
 2. **Root Directory**: `client`
 3. Vercel detecta Vite automaticamente (`npm run build`, saída em `dist`).
 4. Em **Environment Variables**, adicione `VITE_API_URL` apontando para a URL do backend no Render + `/api` (ex.: `https://chamados-api.onrender.com/api`).
 5. Faça o deploy. Depois, volte no Render e atualize `CORS_ORIGIN` com a URL final do Vercel (ex.: `https://chamados-app.vercel.app`), e reinicie o serviço.
+
+### 2.4 Atualizando depois
+Cada `git push` na branch `main` faz o Render e o Vercel publicarem sozinhos. Se mudar o `schema.prisma`, crie a migration localmente (`npx prisma migrate dev --name descricao`), faça commit da pasta `prisma/migrations` e dê push: o Start Command já roda `prisma migrate deploy` ao subir.
 
 Pronto: painel público no Vercel, API no Render, banco no Neon — tudo nos planos gratuitos.
 
