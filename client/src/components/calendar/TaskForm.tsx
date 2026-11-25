@@ -56,7 +56,7 @@ export function TaskForm({ dataInicial, tarefa, onSubmit, onCancel }: Props) {
           <button
             type="button"
             onClick={onCancel}
-            className="px-3 py-1.5 text-sm rounded border border-ink-900/15 text-ink-800 hover:bg-slate-50"
+            className="px-3 py-1.5 text-sm rounded border border-line text-fg hover:bg-subtle"
           >
             Cancelar
           </button>
@@ -64,7 +64,7 @@ export function TaskForm({ dataInicial, tarefa, onSubmit, onCancel }: Props) {
         <button
           type="submit"
           disabled={enviando}
-          className="px-3 py-1.5 text-sm rounded bg-ink-900 text-white hover:bg-ink-800 disabled:opacity-60"
+          className="px-3 py-1.5 text-sm rounded bg-btn text-btn-fg hover:bg-btn-hover disabled:opacity-60"
         >
           {enviando ? "Salvando…" : tarefa ? "Salvar" : "Adicionar tarefa"}
         </button>

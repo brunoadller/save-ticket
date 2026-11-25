@@ -2,6 +2,16 @@ import { useCallback, useEffect, useState } from "react";
 import api from "../api/axios";
 import { Ticket, TicketFormData } from "../types";
 
+/** Converte os campos "vazios" do formulário em null para a API. */
+function toPayload(data: Partial<TicketFormData>) {
+  const { situacaoAtual, assignedToId, ...rest } = data;
+  return {
+    ...rest,
+    ...(situacaoAtual !== undefined ? { situacaoAtual: situacaoAtual || null } : {}),
+    ...(assignedToId !== undefined ? { assignedToId: assignedToId || null } : {}),
+  };
+}
+
 export function useTickets() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -24,11 +34,11 @@ export function useTickets() {
   }, [carregar]);
 
   const criar = async (data: TicketFormData) => {
-    await api.post("/tickets", data);
+    await api.post("/tickets", toPayload(data));
     await carregar();
   };
   const editar = async (id: string, data: Partial<TicketFormData>) => {
-    await api.patch(`/tickets/${id}`, data);
+    await api.patch(`/tickets/${id}`, toPayload(data));
     await carregar();
   };
   const concluir = async (id: string) => {
@@ -44,5 +54,21 @@ export function useTickets() {
     await carregar();
   };
 
-  return { tickets, carregando, erro, criar, editar, concluir, reabrir, excluir };
+  /** Exclui em lotes de até 200 (limite da API). Cada lote é tudo-ou-nada no servidor. */
+  const excluirEmLote = async (ids: string[]) => {
+    let total = 0;
+    try {
+      for (let i = 0; i < ids.length; i += 200) {
+        const { data } = await api.delete<{ deleted: number }>("/tickets/bulk", {
+          data: { ids: ids.slice(i, i + 200) },
+        });
+        total += data.deleted;
+      }
+    } finally {
+      await carregar();
+    }
+    return total;
+  };
+
+  return { tickets, carregando, erro, criar, editar, concluir, reabrir, excluir, excluirEmLote };
 }

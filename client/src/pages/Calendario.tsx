@@ -1,6 +1,10 @@
 import { useMemo, useState } from "react";
 import { useTasks } from "../hooks/useTasks";
 import { useTickets } from "../hooks/useTickets";
+import { useUsers } from "../hooks/useUsers";
+import { useTicketFilters } from "../hooks/useTicketFilters";
+import { EMPTY_FILTERS, filterTickets, personOptions } from "../lib/ticketFilters";
+import { PersonSelect } from "../components/tickets/PersonSelect";
 import { Task, Ticket } from "../types";
 import { MESES, dateOnly, monthOf, todayStr } from "../lib/dates";
 import { YearView } from "../components/calendar/YearView";
@@ -25,9 +29,18 @@ export function Calendario() {
   const { tasks, carregando, erro, criar, editar, alternar, excluir } = useTasks(ano);
   const { tickets } = useTickets();
 
+  const users = useUsers();
+  const { filters, update } = useTicketFilters();
+  const criadores = useMemo(() => personOptions(users, tickets, (t) => t.createdBy), [users, tickets]);
+  const responsaveis = useMemo(() => personOptions(users, tickets, (t) => t.assignedTo), [users, tickets]);
+
+  // Mesma função de filtro da tela de chamados; aqui só criador e responsável se aplicam
   const chamadosDoAno = useMemo(
-    () => tickets.filter((t) => dateOnly(t.dataPrazo).startsWith(`${ano}-`)),
-    [tickets, ano]
+    () =>
+      filterTickets(tickets, { ...EMPTY_FILTERS, criador: filters.criador, responsavel: filters.responsavel }).filter(
+        (t) => dateOnly(t.dataPrazo).startsWith(`${ano}-`)
+      ),
+    [tickets, ano, filters.criador, filters.responsavel]
   );
 
   const resumos: ResumoMes[] = useMemo(
@@ -76,7 +89,7 @@ export function Calendario() {
       ? `${ano}-${String(mes + 1).padStart(2, "0")}-01`
       : hoje;
 
-  const navBtn = "px-2.5 py-1.5 text-sm rounded border border-ink-900/15 text-ink-800 hover:bg-white";
+  const navBtn = "px-2.5 py-1.5 text-sm rounded border border-line text-fg hover:bg-surface";
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
@@ -87,10 +100,10 @@ export function Calendario() {
               ← Voltar para {ano}
             </button>
           )}
-          <h2 className="text-xl font-semibold text-ink-900">
+          <h2 className="text-xl font-semibold text-fg">
             {mes === null ? `Calendário ${ano}` : `${MESES[mes]} de ${ano}`}
           </h2>
-          <p className="text-sm text-ink-700/60">
+          <p className="text-sm text-muted">
             {mes === null
               ? "Escolha um mês para programar as tarefas."
               : "Clique em um dia para ver e adicionar tarefas."}
@@ -119,7 +132,7 @@ export function Calendario() {
                 ›
               </button>
               <button
-                className="bg-ink-900 text-white text-sm font-medium rounded px-4 py-1.5 hover:bg-ink-800"
+                className="bg-btn text-btn-fg text-sm font-medium rounded px-4 py-1.5 hover:bg-btn-hover"
                 onClick={() => setDia(diaInicialNovaTarefa)}
               >
                 Nova tarefa
@@ -130,6 +143,33 @@ export function Calendario() {
       </div>
 
       {erro && <p className="text-sm text-danger bg-danger/10 rounded px-3 py-2">{erro}</p>}
+
+      <div className="flex flex-wrap items-end gap-3">
+        <PersonSelect
+          label="Chamados criados por"
+          value={filters.criador}
+          onChange={(criador) => update({ criador })}
+          options={criadores.list}
+          total={tickets.length}
+        />
+        <PersonSelect
+          label="Chamados sob responsabilidade de"
+          value={filters.responsavel}
+          onChange={(responsavel) => update({ responsavel })}
+          options={responsaveis.list}
+          semPessoa={responsaveis.semPessoa}
+          total={tickets.length}
+        />
+        {(filters.criador || filters.responsavel) && (
+          <button
+            type="button"
+            onClick={() => update({ criador: "", responsavel: "" })}
+            className="text-xs text-accent hover:underline pb-2"
+          >
+            Limpar filtros
+          </button>
+        )}
+      </div>
 
       {totalAtrasadas > 0 && (
         <div className="flex items-center justify-between gap-3 border border-danger/30 bg-danger/10 rounded-lg px-4 py-3">
@@ -148,7 +188,7 @@ export function Calendario() {
       )}
 
       {carregando ? (
-        <p className="text-sm text-ink-700/60">Carregando calendário…</p>
+        <p className="text-sm text-muted">Carregando calendário…</p>
       ) : mes === null ? (
         <YearView
           ano={ano}
@@ -182,16 +222,16 @@ export function Calendario() {
                 onFechar={() => setDia(null)}
               />
             ) : (
-              <div className="bg-white border border-ink-900/10 rounded-lg p-4 space-y-3">
-                <h3 className="text-sm font-semibold text-ink-900">Tarefas de {MESES[mes]}</h3>
+              <div className="bg-surface border border-line rounded-lg p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-fg">Tarefas de {MESES[mes]}</h3>
                 {tarefasDoMes.length === 0 ? (
-                  <p className="text-sm text-ink-700/60">
+                  <p className="text-sm text-muted">
                     Nada programado neste mês. Clique em um dia para adicionar.
                   </p>
                 ) : (
                   tarefasDoMes.map((t) => (
                     <div key={t.id}>
-                      <p className="text-[11px] text-ink-700/50 mb-1">
+                      <p className="text-[11px] text-muted mb-1">
                         {t.data.slice(8)}/{t.data.slice(5, 7)}
                       </p>
                       <TaskItem

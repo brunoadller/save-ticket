@@ -61,3 +61,18 @@ export function formatDayLong(dateStr: string) {
   ];
   return `${dow}, ${d} de ${MESES[m - 1].toLowerCase()}`;
 }
+
+/** Soma dias a uma data AAAA-MM-DD. */
+export function addDays(dateStr: string, n: number) {
+  const [y, m, d] = dateOnly(dateStr).split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + n));
+  return `${dt.getUTCFullYear()}-${pad(dt.getUTCMonth() + 1)}-${pad(dt.getUTCDate())}`;
+}
+
+/** Semana de segunda a domingo que contém a data. */
+export function weekRange(dateStr: string) {
+  const [y, m, d] = dateOnly(dateStr).split("-").map(Number);
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 = domingo
+  const start = addDays(dateStr, -((dow + 6) % 7));
+  return { start, end: addDays(start, 6) };
+}

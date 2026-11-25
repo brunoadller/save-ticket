@@ -14,7 +14,7 @@ export function TaskItem({ tarefa, onToggle, onEditar, onExcluir }: Props) {
 
   if (editando) {
     return (
-      <div className="border border-ink-900/10 rounded p-3 bg-white">
+      <div className="border border-line rounded p-3 bg-surface">
         <TaskForm
           dataInicial={tarefa.data}
           tarefa={tarefa}
@@ -30,26 +30,26 @@ export function TaskItem({ tarefa, onToggle, onEditar, onExcluir }: Props) {
 
   return (
     <div
-      className={`flex gap-3 border rounded p-3 bg-white ${
-        tarefa.atrasada ? "border-danger/40 bg-danger/5" : "border-ink-900/10"
+      className={`flex gap-3 border rounded p-3 bg-surface ${
+        tarefa.atrasada ? "border-danger/40 bg-danger/5" : "border-line"
       }`}
     >
       <button
         onClick={onToggle}
         aria-label={tarefa.concluida ? "Reabrir tarefa" : "Concluir tarefa"}
         className={`mt-0.5 w-5 h-5 shrink-0 rounded-full border flex items-center justify-center text-[11px] ${
-          tarefa.concluida ? "bg-ok border-ok text-white" : "border-ink-900/30 hover:border-ok"
+          tarefa.concluida ? "bg-ok border-ok text-on-solid" : "border-line-strong hover:border-ok"
         }`}
       >
         {tarefa.concluida && "✓"}
       </button>
 
       <div className="min-w-0 flex-1">
-        <p className={`text-sm font-medium ${tarefa.concluida ? "line-through text-ink-700/50" : "text-ink-900"}`}>
+        <p className={`text-sm font-medium ${tarefa.concluida ? "line-through text-muted" : "text-fg"}`}>
           {tarefa.titulo}
         </p>
         {tarefa.descricao && (
-          <p className="text-xs text-ink-700/70 mt-0.5 whitespace-pre-wrap">{tarefa.descricao}</p>
+          <p className="text-xs text-muted mt-0.5 whitespace-pre-wrap">{tarefa.descricao}</p>
         )}
         {tarefa.atrasada && <p className="text-xs text-danger font-medium mt-1">Prazo vencido — não concluída</p>}
         <div className="flex gap-3 mt-2 text-xs">

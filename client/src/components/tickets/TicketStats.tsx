@@ -20,12 +20,16 @@ export function TicketStats({ tickets, ativo, onSelect }: Props) {
           <button
             key={s}
             onClick={() => onSelect(selecionado ? "" : s)}
-            className={`text-left bg-white border rounded-lg p-4 transition-colors ${
-              selecionado ? "border-accent ring-1 ring-accent" : "border-ink-900/10 hover:border-ink-900/25"
+            aria-pressed={selecionado}
+            className={`text-left bg-surface border rounded-xl p-4 shadow-card transition-colors ${
+              selecionado ? "border-accent ring-1 ring-accent" : "border-line hover:border-line-strong"
             }`}
           >
-            <p className="text-xs text-ink-700/60">{STATUS_META[s].label}</p>
-            <p className={`text-2xl font-semibold mt-1 ${s === "EXPIRADO" && n > 0 ? "text-danger" : "text-ink-900"}`}>
+            <p className="flex items-center gap-2 text-xs text-muted">
+              <span className={`h-2 w-2 rounded-full ${STATUS_META[s].dot}`} aria-hidden />
+              {STATUS_META[s].label}
+            </p>
+            <p className={`text-2xl font-semibold mt-1 ${s === "EXPIRADO" && n > 0 ? "text-danger" : "text-fg"}`}>
               {n}
             </p>
           </button>

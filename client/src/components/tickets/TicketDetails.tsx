@@ -1,51 +1,151 @@
+import { ReactNode } from "react";
 import { Ticket } from "../../types";
 import { formatBR } from "../../lib/dates";
+import { poloLabel, studentStatusClass, studentStatusLabel } from "../../constants";
+import { Avatar } from "../ui/Avatar";
 
 interface Props {
   ticket: Ticket;
+  podeExcluir: boolean;
   onEdit: () => void;
   onExcluir: () => void;
 }
 
-function Item({ label, value }: { label: string; value?: string }) {
+function Section({ title, children, className = "" }: { title: string; children: ReactNode; className?: string }) {
   return (
-    <div>
-      <p className="text-xs text-ink-700/50">{label}</p>
-      <p className="text-sm text-ink-900">{value || "—"}</p>
+    <section className={`rounded-lg border border-line bg-subtle p-4 ${className}`}>
+      <h4 className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-muted">{title}</h4>
+      {children}
+    </section>
+  );
+}
+
+function Item({ label, value, children }: { label: string; value?: string; children?: ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-xs text-muted">{label}</p>
+      <div className="text-sm text-fg break-words">{children ?? (value || "—")}</div>
     </div>
   );
 }
 
-/** Visualização completa do chamado (aparece ao expandir a linha). */
-export function TicketDetails({ ticket, onEdit, onExcluir }: Props) {
+function Person({ name }: { name?: string }) {
+  if (!name) return <span className="italic text-muted">Sem responsável</span>;
   return (
-    <div className="px-4 pb-4 pt-1 bg-slate-50/70">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Item label="RA" value={ticket.ra} />
-        <Item label="Curso" value={ticket.curso} />
-        <Item label="Situação atual" value={ticket.situacaoAtual} />
-        <Item label="Cadastrado por" value={ticket.createdBy?.name} />
+    <span className="inline-flex items-center gap-2">
+      <Avatar name={name} size="sm" />
+      {name}
+    </span>
+  );
+}
+
+/** Linha do tempo curta: realização → previsão → conclusão. */
+function Timeline({ ticket }: { ticket: Ticket }) {
+  const concluido = ticket.status === "CONCLUIDO";
+  const expirado = ticket.status === "EXPIRADO";
+  const steps = [
+    { label: "Realização", date: formatBR(ticket.dataCriacao), reached: true, dot: "bg-accent-fill" },
+    {
+      label: "Previsão",
+      date: formatBR(ticket.dataPrazo),
+      reached: concluido || expirado,
+      dot: expirado ? "bg-danger" : "bg-accent-fill",
+    },
+    {
+      label: "Conclusão",
+      date: ticket.dataConclusao ? formatBR(ticket.dataConclusao) : "Pendente",
+      reached: concluido,
+      dot: "bg-ok",
+    },
+  ];
+  return (
+    <ol className="flex items-start" aria-label="Linha do tempo do chamado">
+      {steps.map((s, i) => (
+        <li key={s.label} className="relative flex-1 min-w-0">
+          {i > 0 && <span className="absolute left-[-50%] right-1/2 top-[5px] h-px bg-line-strong" aria-hidden />}
+          <div className="relative flex flex-col items-center text-center">
+            <span
+              className={`h-[11px] w-[11px] rounded-full border-2 ${
+                s.reached ? `${s.dot} border-transparent` : "border-line-strong bg-surface"
+              }`}
+              aria-hidden
+            />
+            <p className="mt-1.5 text-xs text-muted">{s.label}</p>
+            <p className={`text-sm ${s.reached ? "font-medium text-fg" : "text-muted"}`}>{s.date}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** Visualização completa do chamado (aparece ao expandir a linha). */
+export function TicketDetails({ ticket, podeExcluir, onEdit, onExcluir }: Props) {
+  const situacao = studentStatusLabel(ticket.situacaoAtual);
+  const repassado = !!ticket.assignedTo && ticket.assignedTo.id !== ticket.createdBy?.id;
+
+  return (
+    <div className="border-t border-line bg-page/40 px-4 py-4 pl-14 space-y-3">
+      <div className="grid gap-3 md:grid-cols-3">
+        <Section title="Aluno">
+          <div className="grid grid-cols-2 gap-3">
+            <Item label="CPF" value={ticket.cpf} />
+            <Item label="Telefone" value={ticket.telefone} />
+            <Item label="RA" value={ticket.ra} />
+            <Item label="Curso" value={ticket.curso} />
+            <Item label="Situação atual" >
+              {situacao ? (
+                <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${studentStatusClass(ticket.situacaoAtual)}`}>
+                  {situacao}
+                </span>
+              ) : ticket.situacaoAtualLegado ? (
+                <span className="text-muted">{ticket.situacaoAtualLegado} (texto antigo)</span>
+              ) : (
+                "—"
+              )}
+            </Item>
+          </div>
+        </Section>
+
+        <Section title="Chamado">
+          <div className="space-y-3">
+            <Item label="Protocolo">
+              <span className="font-mono">{ticket.protocolo}</span>
+            </Item>
+            <Item label="Polo" value={poloLabel(ticket.polo)} />
+          </div>
+        </Section>
+
+        <Section title="Pessoas">
+          <div className="space-y-3">
+            <Item label="Criado por">
+              <Person name={ticket.createdBy?.name} />
+            </Item>
+            <Item label="Responsável">
+              <Person name={ticket.assignedTo?.name} />
+              {repassado && <p className="mt-1 text-xs text-accent">Responsável diferente de quem criou o chamado.</p>}
+            </Item>
+          </div>
+        </Section>
       </div>
 
-      <div className="mt-4">
-        <p className="text-xs text-ink-700/50">Justificativa</p>
-        <p className="text-sm text-ink-900 whitespace-pre-wrap">{ticket.justificativa || "—"}</p>
-      </div>
+      <Section title="Justificativa">
+        <p className="text-sm text-fg whitespace-pre-wrap">{ticket.justificativa || "—"}</p>
+      </Section>
 
-      {ticket.dataConclusao && (
-        <p className="mt-3 text-xs text-ok">Concluído em {formatBR(ticket.dataConclusao)}</p>
-      )}
+      <Section title="Linha do tempo">
+        <Timeline ticket={ticket} />
+      </Section>
 
-      <div className="mt-4 flex gap-2 text-xs">
-        <button
-          onClick={onEdit}
-          className="px-3 py-1.5 rounded border border-ink-900/15 text-ink-800 hover:bg-white"
-        >
+      <div className="flex gap-2 text-sm">
+        <button onClick={onEdit} className="rounded-md border border-line-strong px-3 py-1.5 text-fg hover:bg-subtle">
           Editar
         </button>
         <button
           onClick={onExcluir}
-          className="px-3 py-1.5 rounded border border-danger/30 text-danger hover:bg-danger/10"
+          disabled={!podeExcluir}
+          title={podeExcluir ? undefined : "Só o criador do chamado ou um administrador pode excluir."}
+          className="rounded-md border border-danger/40 px-3 py-1.5 text-danger hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
         >
           Excluir
         </button>

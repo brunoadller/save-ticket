@@ -1,9 +1,11 @@
 import { FormEvent, useState } from "react";
-import { POLOS } from "../../constants";
+import { POLOS, STUDENT_STATUS } from "../../constants";
 import { Ticket, TicketFormData } from "../../types";
 import { Field, inputClass } from "../ui/Field";
 import { dateOnly, todayStr } from "../../lib/dates";
 import { maskCpf } from "../../lib/format";
+import { useUsers } from "../../hooks/useUsers";
+import { useAuth } from "../../context/AuthContext";
 
 interface Props {
   ticketExistente?: Ticket | null;
@@ -15,8 +17,8 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
   return (
     <fieldset className="grid grid-cols-2 gap-4">
       <legend className="col-span-2 mb-1">
-        <span className="text-xs font-semibold uppercase tracking-wide text-ink-700/60">{title}</span>
-        {hint && <span className="text-xs text-ink-700/50 ml-2">{hint}</span>}
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted">{title}</span>
+        {hint && <span className="text-xs text-muted ml-2">{hint}</span>}
       </legend>
       {children}
     </fieldset>
@@ -25,6 +27,8 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 
 /** Formulário de cadastro/edição — só campos e envio; o "casco" (modal) fica em TicketFormModal. */
 export function TicketForm({ ticketExistente: t, onSubmit, onCancel }: Props) {
+  const users = useUsers();
+  const { user } = useAuth();
   const [form, setForm] = useState<TicketFormData>({
     protocolo: t?.protocolo ?? "",
     polo: t?.polo ?? POLOS[2].value,
@@ -35,6 +39,9 @@ export function TicketForm({ ticketExistente: t, onSubmit, onCancel }: Props) {
     ra: t?.ra ?? "",
     curso: t?.curso ?? "",
     situacaoAtual: t?.situacaoAtual ?? "",
+    telefone: t?.telefone ?? "",
+    // Novo chamado: o responsável começa como quem está criando (pode ser trocado)
+    assignedToId: t ? t.assignedTo?.id ?? "" : user?.id ?? "",
     justificativa: t?.justificativa ?? "",
   });
   const [enviando, setEnviando] = useState(false);
@@ -87,6 +94,26 @@ export function TicketForm({ ticketExistente: t, onSubmit, onCancel }: Props) {
             ))}
           </select>
         </Field>
+        <Field label="Responsável" className="col-span-2">
+          <select
+            value={form.assignedToId}
+            onChange={(e) => set("assignedToId", e.target.value)}
+            className={inputClass}
+          >
+            <option value="">Sem responsável</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.name}
+              </option>
+            ))}
+            {/* mantém o valor selecionado visível se a pessoa não estiver (ainda) na lista */}
+            {form.assignedToId && !users.some((u) => u.id === form.assignedToId) && (
+              <option value={form.assignedToId}>
+                {t?.assignedTo?.id === form.assignedToId ? t.assignedTo.name : user?.name ?? "Usuário"}
+              </option>
+            )}
+          </select>
+        </Field>
         <Field label="Data de realização">
           <input
             required
@@ -117,6 +144,16 @@ export function TicketForm({ ticketExistente: t, onSubmit, onCancel }: Props) {
             className={inputClass}
           />
         </Field>
+        <Field label="Telefone" >
+          <input
+            type="tel"
+            inputMode="tel"
+            value={form.telefone}
+            onChange={(e) => set("telefone", e.target.value)}
+            className={inputClass}
+            placeholder="(53) 90000-0000"
+          />
+        </Field>
         <Field label="CPF">
           <input
             required
@@ -134,12 +171,18 @@ export function TicketForm({ ticketExistente: t, onSubmit, onCancel }: Props) {
           <input value={form.ra} onChange={(e) => set("ra", e.target.value)} className={inputClass} />
         </Field>
         <Field label="Situação atual">
-          <input
+          <select
             value={form.situacaoAtual}
-            onChange={(e) => set("situacaoAtual", e.target.value)}
+            onChange={(e) => set("situacaoAtual", e.target.value as TicketFormData["situacaoAtual"])}
             className={inputClass}
-            placeholder="FORMANDO"
-          />
+          >
+            <option value="">Não informada</option>
+            {STUDENT_STATUS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
         </Field>
         <Field label="Curso" className="col-span-2">
           <input value={form.curso} onChange={(e) => set("curso", e.target.value)} className={inputClass} />
@@ -158,14 +201,14 @@ export function TicketForm({ ticketExistente: t, onSubmit, onCancel }: Props) {
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 text-sm rounded border border-ink-900/15 text-ink-800 hover:bg-slate-50"
+          className="px-4 py-2 text-sm rounded border border-line text-fg hover:bg-subtle"
         >
           Cancelar
         </button>
         <button
           type="submit"
           disabled={enviando}
-          className="px-4 py-2 text-sm rounded bg-ink-900 text-white hover:bg-ink-800 disabled:opacity-60"
+          className="px-4 py-2 text-sm rounded bg-btn text-btn-fg hover:bg-btn-hover disabled:opacity-60"
         >
           {enviando ? "Salvando…" : "Salvar chamado"}
         </button>

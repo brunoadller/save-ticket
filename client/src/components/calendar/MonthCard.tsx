@@ -20,16 +20,16 @@ export function MonthCard({ mes, resumo, atual, onClick }: Props) {
   return (
     <button
       onClick={onClick}
-      className={`text-left bg-white border rounded-lg p-4 hover:border-accent transition-colors ${
-        resumo.atrasadas > 0 ? "border-danger/40" : atual ? "border-accent" : "border-ink-900/10"
+      className={`text-left bg-surface border rounded-lg p-4 hover:border-accent transition-colors ${
+        resumo.atrasadas > 0 ? "border-danger/40" : atual ? "border-accent" : "border-line"
       }`}
     >
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold text-ink-900">{MESES[mes]}</h3>
+        <h3 className="text-base font-semibold text-fg">{MESES[mes]}</h3>
         {atual && <span className="text-[10px] font-semibold uppercase text-accent">Mês atual</span>}
       </div>
 
-      <p className="text-sm text-ink-700/70 mt-3">
+      <p className="text-sm text-muted mt-3">
         {resumo.total === 0
           ? "Sem tarefas"
           : `${resumo.total} tarefa${resumo.total > 1 ? "s" : ""} · ${resumo.concluidas} concluída${
@@ -37,7 +37,7 @@ export function MonthCard({ mes, resumo, atual, onClick }: Props) {
             }`}
       </p>
 
-      <div className="h-1.5 rounded bg-slate-50 border border-ink-900/5 mt-2 overflow-hidden">
+      <div className="h-1.5 rounded bg-subtle border border-line mt-2 overflow-hidden">
         <div className="h-full bg-ok" style={{ width: `${pct}%` }} />
       </div>
 
@@ -48,7 +48,7 @@ export function MonthCard({ mes, resumo, atual, onClick }: Props) {
           </span>
         )}
         {resumo.chamados > 0 && (
-          <span className="rounded px-1.5 py-0.5 bg-accent-light/30 text-accent">
+          <span className="rounded px-1.5 py-0.5 bg-accent/15 text-accent">
             {resumo.chamados} chamado{resumo.chamados > 1 ? "s" : ""} vencendo
           </span>
         )}

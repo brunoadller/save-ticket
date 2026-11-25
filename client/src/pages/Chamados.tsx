@@ -1,31 +1,75 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTickets } from "../hooks/useTickets";
+import { useUsers } from "../hooks/useUsers";
+import { useTicketFilters } from "../hooks/useTicketFilters";
+import { useAuth } from "../context/AuthContext";
+import { filterTickets, sortTickets, SortKey } from "../lib/ticketFilters";
 import { Ticket } from "../types";
 import { TicketStats } from "../components/tickets/TicketStats";
-import { TicketFilters, Filtros } from "../components/tickets/TicketFilters";
+import { TicketFilters } from "../components/tickets/TicketFilters";
 import { TicketList } from "../components/tickets/TicketList";
+import { BulkActionBar } from "../components/tickets/BulkActionBar";
+import { BulkDeleteDialog } from "../components/tickets/BulkDeleteDialog";
 import { TicketFormModal } from "../components/tickets/TicketFormModal";
 
 export function Chamados() {
-  const { tickets, carregando, erro, criar, editar, concluir, reabrir, excluir } = useTickets();
-  const [filtros, setFiltros] = useState<Filtros>({ busca: "", polo: "", status: "" });
+  const { tickets, carregando, erro, criar, editar, concluir, reabrir, excluir, excluirEmLote } =
+    useTickets();
+  const { user } = useAuth();
+  const users = useUsers();
+  const { filters, update, clear } = useTicketFilters();
   const [modalAberto, setModalAberto] = useState(false);
   const [emEdicao, setEmEdicao] = useState<Ticket | null>(null);
 
-  const filtrados = useMemo(() => {
-    const q = filtros.busca.trim().toLowerCase();
-    const qDigits = q.replace(/\D/g, "");
-    return tickets.filter((t) => {
-      if (filtros.polo && t.polo !== filtros.polo) return false;
-      if (filtros.status && t.status !== filtros.status) return false;
-      if (!q) return true;
-      return (
-        t.protocolo.toLowerCase().includes(q) ||
-        t.nomeAluno.toLowerCase().includes(q) ||
-        (qDigits.length > 0 && t.cpf.replace(/\D/g, "").includes(qDigits))
-      );
+  const filtrados = useMemo(
+    () => sortTickets(filterTickets(tickets, filters), filters.ordem, filters.dir),
+    [tickets, filters]
+  );
+  // Cartões de contagem seguem todos os filtros, menos o de status
+  const paraCartoes = useMemo(() => filterTickets(tickets, filters, { ignoreStatus: true }), [tickets, filters]);
+
+  // Só o criador ou um administrador pode excluir (a API também confere)
+  const excluiveis = useMemo(
+    () => filtrados.filter((t) => !!user && (user.role === "ADMIN" || t.createdBy?.id === user.id)),
+    [filtrados, user]
+  );
+
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
+  const [confirmando, setConfirmando] = useState(false);
+  // A seleção só vale para o que ainda está no resultado filtrado e é excluível
+  const selecaoEfetiva = useMemo(
+    () => new Set(excluiveis.filter((t) => selecionados.has(t.id)).map((t) => t.id)),
+    [excluiveis, selecionados]
+  );
+  const chamadosSelecionados = useMemo(
+    () => excluiveis.filter((t) => selecaoEfetiva.has(t.id)),
+    [excluiveis, selecaoEfetiva]
+  );
+
+  // Mudou qualquer filtro ou a busca (a ordenação não conta): limpa a seleção
+  const chaveFiltros = JSON.stringify({ ...filters, ordem: "", dir: "" });
+  useEffect(() => {
+    setSelecionados(new Set());
+  }, [chaveFiltros]);
+
+  function alternar(id: string, marcado: boolean) {
+    setSelecionados((prev) => {
+      const novo = new Set(prev);
+      if (marcado) novo.add(id);
+      else novo.delete(id);
+      return novo;
     });
-  }, [tickets, filtros]);
+  }
+
+  async function excluirSelecionados() {
+    await excluirEmLote(chamadosSelecionados.map((t) => t.id));
+    setSelecionados(new Set());
+    setConfirmando(false);
+  }
+
+  function ordenarPor(key: SortKey) {
+    update(filters.ordem === key ? { dir: filters.dir === "asc" ? "desc" : "asc" } : { ordem: key, dir: "asc" });
+  }
 
   function abrirNovo() {
     setEmEdicao(null);
@@ -34,19 +78,23 @@ export function Chamados() {
 
   async function handleExcluir(t: Ticket) {
     if (!confirm(`Excluir o chamado de ${t.nomeAluno}?`)) return;
-    await excluir(t.id);
+    try {
+      await excluir(t.id);
+    } catch (err: any) {
+      alert(err.response?.data?.error || "Não foi possível excluir o chamado.");
+    }
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
+    <div className={`max-w-6xl mx-auto px-6 py-8 space-y-6 ${selecaoEfetiva.size > 0 ? "pb-28" : ""}`}>
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-ink-900">Chamados</h2>
-          <p className="text-sm text-ink-700/60">Acompanhe protocolos, previsões e conclusões.</p>
+          <h2 className="text-xl font-semibold text-fg">Chamados</h2>
+          <p className="text-sm text-muted">Acompanhe protocolos, previsões e conclusões.</p>
         </div>
         <button
           onClick={abrirNovo}
-          className="bg-ink-900 text-white text-sm font-medium rounded px-4 py-2 hover:bg-ink-800"
+          className="bg-btn text-btn-fg text-sm font-medium rounded px-4 py-2 hover:bg-btn-hover"
         >
           Novo chamado
         </button>
@@ -54,16 +102,34 @@ export function Chamados() {
 
       {erro && <p className="text-sm text-danger bg-danger/10 rounded px-3 py-2">{erro}</p>}
 
-      <TicketStats tickets={tickets} ativo={filtros.status} onSelect={(status) => setFiltros({ ...filtros, status })} />
+      <TicketStats tickets={paraCartoes} ativo={filters.status} onSelect={(status) => update({ status })} />
 
-      <TicketFilters value={filtros} onChange={setFiltros} />
+      <TicketFilters
+        filters={filters}
+        onChange={update}
+        onClear={clear}
+        tickets={tickets}
+        users={users}
+        currentUserId={user?.id}
+        shown={filtrados.length}
+        total={tickets.length}
+      />
 
       <TicketList
         tickets={filtrados}
+        ordem={filters.ordem}
+        dir={filters.dir}
+        onSort={ordenarPor}
+        currentUser={user ?? undefined}
+        selectedIds={selecaoEfetiva}
+        selectableCount={excluiveis.length}
+        onToggleSelect={alternar}
+        onToggleAll={(marcado) => setSelecionados(marcado ? new Set(excluiveis.map((t) => t.id)) : new Set())}
         carregando={carregando}
+        vazioAcao={tickets.length === 0 ? { label: "Novo chamado", onClick: abrirNovo } : { label: "Limpar filtros", onClick: clear }}
         vazioMensagem={
           tickets.length === 0
-            ? "Nenhum chamado cadastrado ainda. Clique em “Novo chamado”."
+            ? "Nenhum chamado cadastrado ainda. Comece registrando o primeiro."
             : "Nenhum chamado encontrado com esses filtros."
         }
         onEdit={(t) => {
@@ -73,6 +139,22 @@ export function Chamados() {
         onToggleConcluido={(t) => (t.status === "CONCLUIDO" ? reabrir(t.id) : concluir(t.id))}
         onExcluir={handleExcluir}
       />
+
+      {selecaoEfetiva.size > 0 && (
+        <BulkActionBar
+          count={selecaoEfetiva.size}
+          onClear={() => setSelecionados(new Set())}
+          onDelete={() => setConfirmando(true)}
+        />
+      )}
+
+      {confirmando && (
+        <BulkDeleteDialog
+          tickets={chamadosSelecionados}
+          onCancel={() => setConfirmando(false)}
+          onConfirm={excluirSelecionados}
+        />
+      )}
 
       {modalAberto && (
         <TicketFormModal

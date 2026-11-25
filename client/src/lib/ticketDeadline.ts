@@ -26,5 +26,12 @@ export const TONE_CLASS: Record<DeadlineTone, string> = {
   ok: "text-ok",
   warn: "text-warn",
   danger: "text-danger font-medium",
-  muted: "text-ink-700/60",
+  muted: "text-muted",
 };
+
+/** Quanto do prazo (realização → previsão) já passou, de 0 a 1. Só faz sentido em chamados em andamento. */
+export function deadlineProgress(t: Ticket, today = todayStr()) {
+  const total = Math.max(1, diffDays(t.dataPrazo, t.dataCriacao));
+  const passed = diffDays(today, t.dataCriacao);
+  return Math.min(1, Math.max(0, passed / total));
+}

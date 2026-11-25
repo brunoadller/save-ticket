@@ -16,10 +16,10 @@ export function MonthView({ ano, mes, tarefasPorDia, chamadosPorDia, selecionado
   const celulas = monthGrid(ano, mes);
 
   return (
-    <div className="bg-white border border-ink-900/10 rounded-lg overflow-hidden">
-      <div className="grid grid-cols-7 border-b border-ink-900/10 bg-slate-50">
+    <div className="bg-surface border border-line rounded-lg overflow-hidden">
+      <div className="grid grid-cols-7 border-b border-line bg-subtle">
         {DIAS_SEMANA.map((d) => (
-          <div key={d} className="px-2 py-2 text-[11px] font-semibold uppercase tracking-wide text-ink-700/50">
+          <div key={d} className="px-2 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted">
             {d}
           </div>
         ))}
@@ -27,7 +27,7 @@ export function MonthView({ ano, mes, tarefasPorDia, chamadosPorDia, selecionado
 
       <div className="grid grid-cols-7">
         {celulas.map((dia, i) => {
-          if (!dia) return <div key={i} className="min-h-[5.5rem] bg-slate-50/50 border-b border-r border-ink-900/5" />;
+          if (!dia) return <div key={i} className="min-h-[5.5rem] bg-subtle/50 border-b border-r border-line" />;
 
           const tarefas = tarefasPorDia[dia] ?? [];
           const chamados = chamadosPorDia[dia] ?? [];
@@ -42,13 +42,13 @@ export function MonthView({ ano, mes, tarefasPorDia, chamadosPorDia, selecionado
             <button
               key={dia}
               onClick={() => onSelecionarDia(dia)}
-              className={`min-h-[5.5rem] p-2 text-left align-top border-b border-r border-ink-900/5 transition-colors hover:bg-slate-50 ${
-                ehSel ? "bg-accent-light/20 ring-1 ring-inset ring-accent" : ""
+              className={`min-h-[5.5rem] p-2 text-left align-top border-b border-r border-line transition-colors hover:bg-subtle ${
+                ehSel ? "bg-accent/10 ring-1 ring-inset ring-accent" : ""
               }`}
             >
               <span
                 className={`inline-flex items-center justify-center text-xs w-6 h-6 rounded-full ${
-                  ehHoje ? "bg-ink-900 text-white font-semibold" : "text-ink-900"
+                  ehHoje ? "bg-btn text-btn-fg font-semibold" : "text-fg"
                 }`}
               >
                 {Number(dia.slice(8))}
@@ -61,7 +61,7 @@ export function MonthView({ ano, mes, tarefasPorDia, chamadosPorDia, selecionado
                   </p>
                 )}
                 {pendentes > 0 && (
-                  <p className="rounded px-1 py-0.5 bg-accent-light/30 text-accent truncate">
+                  <p className="rounded px-1 py-0.5 bg-accent/15 text-accent truncate">
                     {pendentes} tarefa{pendentes > 1 ? "s" : ""}
                   </p>
                 )}

@@ -2,6 +2,121 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Tema claro/escuro. Cada cor é um trio "R G B" para o Tailwind aplicar opacidade (bg-accent/15).
+  Escuro inspirado no site da Neon: grafite quase preto, bordas finas e um único verde neon.
+  Nenhum componente usa cor fixa: tudo passa por estas variáveis.
+*/
+:root {
+  color-scheme: light;
+  --page: 246 247 249;
+  --surface: 255 255 255;
+  --elevated: 255 255 255;
+  --subtle: 241 243 245;
+  --sidebar: 255 255 255;
+  --line: 227 230 234;
+  --line-strong: 144 147 150; /* bordas de campos: 3:1 */
+  --fg: 20 23 26;
+  --muted: 91 99 107;
+
+  --accent: 9 109 75; /* texto e ícones (verde escuro: o neon não tem contraste no claro) */
+  --accent-fill: 0 229 153; /* preenchimentos: botão, ponto, barra */
+  --on-accent: 5 31 21; /* texto sobre o preenchimento */
+  --btn-hover: 0 200 134;
+  --ok: 9 109 75;
+  --warn: 155 71 8;
+  --danger: 180 36 36;
+  --on-solid: 255 255 255; /* texto sobre ok/danger preenchidos */
+
+  --info: 29 78 216;
+  --violet: 109 40 217;
+  --teal: 14 107 100;
+  --pink: 181 23 88;
+
+  --shadow-card: 0 1px 2px rgb(20 23 26 / 0.05), 0 4px 16px rgb(20 23 26 / 0.04);
+}
+
+.dark {
+  color-scheme: dark;
+  --page: 11 12 14;
+  --surface: 19 21 24;
+  --elevated: 26 29 33;
+  --subtle: 24 27 31;
+  --sidebar: 11 12 14;
+  --line: 37 40 45;
+  --line-strong: 97 100 104; /* bordas de campos: 3:1 */
+  --fg: 237 238 240;
+  --muted: 155 161 168;
+
+  --accent: 0 229 153;
+  --accent-fill: 0 229 153;
+  --on-accent: 5 24 16;
+  --btn-hover: 51 237 176;
+  --ok: 52 211 153;
+  --warn: 251 191 36;
+  --danger: 248 113 113;
+  --on-solid: 11 12 14;
+
+  --info: 96 165 250;
+  --violet: 167 139 250;
+  --teal: 45 212 191;
+  --pink: 244 114 182;
+
+  --shadow-card: 0 0 0 1px rgb(255 255 255 / 0.02), 0 8px 24px rgb(0 0 0 / 0.35);
+}
+
 body {
-  @apply bg-slate-50 text-ink-900;
+  @apply bg-page text-fg antialiased;
+}
+
+/* Foco visível em todos os controles, com anel na cor de destaque */
+:focus-visible {
+  outline: 2px solid rgb(var(--accent));
+  outline-offset: 2px;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline-offset: 0;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgb(var(--muted) / 0.8);
+}
+
+/* Datas nativas escurecem no tema escuro */
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
+}
+
+/* Transição suave só quando a pessoa troca o tema (não no carregamento inicial) */
+.theme-anim,
+.theme-anim *,
+.theme-anim *::before,
+.theme-anim *::after {
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, fill 150ms ease,
+    stroke 150ms ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-anim,
+  .theme-anim * {
+    transition: none !important;
+  }
+  .animate-pulse {
+    animation: none;
+  }
+}
+
+@layer base {
+  input,
+  select,
+  textarea {
+    background-color: rgb(var(--surface));
+    color: rgb(var(--fg));
+  }
+  input[type="checkbox"] {
+    background-color: transparent;
+  }
 }
