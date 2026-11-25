@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import authRoutes from "./routes/auth.routes";
 import ticketRoutes from "./routes/ticket.routes";
+import userRoutes from "./routes/user.routes";
 import taskRoutes from "./routes/task.routes";
 
 const app = express();
@@ -15,6 +16,7 @@ app.get("/health", (_req, res) => res.json({ status: "ok" }));
 app.use("/api/auth", authRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/tasks", taskRoutes);
+app.use("/api/users", userRoutes);
 
 // Handler de erro genérico
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

@@ -1,14 +1,15 @@
 import { Router } from "express";
 import { listTasks, createTask, updateTask, deleteTask } from "../controllers/task.controller";
+import { asyncHandler } from "../utils/asyncHandler";
 import { requireAuth } from "../middleware/auth";
 
 const router = Router();
 
 router.use(requireAuth);
 
-router.get("/", listTasks);
-router.post("/", createTask);
-router.patch("/:id", updateTask);
-router.delete("/:id", deleteTask);
+router.get("/", asyncHandler(listTasks));
+router.post("/", asyncHandler(createTask));
+router.patch("/:id", asyncHandler(updateTask));
+router.delete("/:id", asyncHandler(deleteTask));
 
 export default router;
