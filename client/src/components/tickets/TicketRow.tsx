@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useExpandable } from "../../hooks/useExpandable";
 import { Ticket } from "../../types";
 import { POLO_META, poloLabel, STATUS_META, studentStatusClass, studentStatusLabel } from "../../constants";
 import { formatBR } from "../../lib/dates";
@@ -42,7 +42,7 @@ function PersonLine({ label, name, ring, note }: { label: string; name?: string;
 }
 
 export function TicketRow({ ticket, podeExcluir, selecionado, onSelect, onEdit, onToggleConcluido, onExcluir }: Props) {
-  const [aberto, setAberto] = useState(false);
+  const { ref, open: aberto, mounted, expanded, toggle } = useExpandable<HTMLDivElement>();
   const status = STATUS_META[ticket.status];
   const prazo = deadlineInfo(ticket);
   const concluido = ticket.status === "CONCLUIDO";
@@ -55,9 +55,10 @@ export function TicketRow({ ticket, podeExcluir, selecionado, onSelect, onEdit, 
 
   return (
     <div
-      className={`border-b border-line last:border-b-0 border-l-4 ${status.stripe} transition-colors ${
+      ref={ref}
+      className={`scroll-mt-16 border-b border-line last:border-b-0 border-l-4 ${status.stripe} transition-[background-color,box-shadow] duration-300 ${
         selecionado ? "bg-accent/10" : "hover:bg-fg/[0.03]"
-      }`}
+      } ${aberto ? "ring-1 ring-inset ring-accent/50" : ""}`}
     >
       <div className="flex items-stretch">
         {/* Seleção: fora da área clicável da linha, não abre o detalhe */}
@@ -75,7 +76,7 @@ export function TicketRow({ ticket, podeExcluir, selecionado, onSelect, onEdit, 
         </div>
 
         <div
-          onClick={() => setAberto((v) => !v)}
+          onClick={toggle}
           className="relative flex-1 min-w-0 grid grid-cols-1 md:grid-cols-12 gap-x-3 gap-y-3 items-center pr-4 py-4 cursor-pointer"
           aria-expanded={aberto}
         >
@@ -174,7 +175,18 @@ export function TicketRow({ ticket, podeExcluir, selecionado, onSelect, onEdit, 
         </div>
       </div>
 
-      {aberto && <TicketDetails ticket={ticket} podeExcluir={podeExcluir} onEdit={onEdit} onExcluir={onExcluir} />}
+      {/* A altura anima de 0fr a 1fr, sem precisar medir o conteúdo */}
+      {mounted && (
+        <div
+          className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out motion-reduce:transition-none ${
+            expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+          }`}
+        >
+          <div className="min-h-0 overflow-hidden">
+            <TicketDetails ticket={ticket} podeExcluir={podeExcluir} onEdit={onEdit} onExcluir={onExcluir} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

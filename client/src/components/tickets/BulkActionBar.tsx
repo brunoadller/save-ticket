@@ -9,6 +9,7 @@ export function BulkActionBar({ count, onClear, onDelete }: Props) {
   return (
     <div
       role="region"
+      data-bottom-bar
       aria-label="Ações para os chamados selecionados"
       className="!m-0 fixed bottom-0 inset-x-0 md:left-56 z-40 px-4 pb-4 pointer-events-none"
     >
