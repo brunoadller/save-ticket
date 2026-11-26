@@ -110,5 +110,5 @@ export function useTickets() {
     return total;
   };
 
-  return { tickets, carregando, erro, criar, editar, alternarConclusao, excluir, excluirEmLote };
+  return { tickets, carregando, erro, recarregar: carregar, criar, editar, alternarConclusao, excluir, excluirEmLote };
 }

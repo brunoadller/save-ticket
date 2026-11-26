@@ -3,6 +3,7 @@ import { Ticket } from "../../types";
 import { formatBR } from "../../lib/dates";
 import { poloLabel, studentStatusClass, studentStatusLabel } from "../../constants";
 import { Avatar } from "../ui/Avatar";
+import { CopyButton } from "../ui/CopyButton";
 
 interface Props {
   ticket: Ticket;
@@ -20,11 +21,22 @@ function Section({ title, children, className = "" }: { title: string; children:
   );
 }
 
-function Item({ label, value, children }: { label: string; value?: string; children?: ReactNode }) {
+interface ItemProps {
+  label: string;
+  value?: string;
+  children?: ReactNode;
+  copyId?: string; // quando informado (e houver valor), mostra o ícone de copiar
+  className?: string;
+}
+
+function Item({ label, value, children, copyId, className = "" }: ItemProps) {
   return (
-    <div className="min-w-0">
+    <div className={`min-w-0 ${className}`}>
       <p className="text-xs text-muted">{label}</p>
-      <div className="text-sm text-fg break-words">{children ?? (value || "—")}</div>
+      <div className="flex items-start gap-1">
+        <div className="min-w-0 text-sm text-fg break-words">{children ?? (value || "—")}</div>
+        {copyId && value && <CopyButton id={copyId} value={value} label={label} />}
+      </div>
     </div>
   );
 }
@@ -89,10 +101,11 @@ export function TicketDetails({ ticket, podeExcluir, onEdit, onExcluir }: Props)
       <div className="grid gap-3 md:grid-cols-3">
         <Section title="Aluno">
           <div className="grid grid-cols-2 gap-3">
-            <Item label="CPF" value={ticket.cpf} />
-            <Item label="Telefone" value={ticket.telefone} />
-            <Item label="RA" value={ticket.ra} />
-            <Item label="Curso" value={ticket.curso} />
+            <Item label="Nome" value={ticket.nomeAluno} copyId={`${ticket.id}:nome`} className="col-span-2" />
+            <Item label="CPF" value={ticket.cpf} copyId={`${ticket.id}:cpf`} />
+            <Item label="Telefone" value={ticket.telefone} copyId={`${ticket.id}:telefone`} />
+            <Item label="RA" value={ticket.ra} copyId={`${ticket.id}:ra`} />
+            <Item label="Curso" value={ticket.curso} copyId={`${ticket.id}:curso`} />
             <Item label="Situação atual" >
               {situacao ? (
                 <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${studentStatusClass(ticket.situacaoAtual)}`}>
@@ -109,7 +122,7 @@ export function TicketDetails({ ticket, podeExcluir, onEdit, onExcluir }: Props)
 
         <Section title="Chamado">
           <div className="space-y-3">
-            <Item label="Protocolo">
+            <Item label="Protocolo" value={ticket.protocolo} copyId={`${ticket.id}:protocolo`}>
               <span className="font-mono">{ticket.protocolo}</span>
             </Item>
             <Item label="Polo" value={poloLabel(ticket.polo)} />
@@ -130,7 +143,12 @@ export function TicketDetails({ ticket, podeExcluir, onEdit, onExcluir }: Props)
       </div>
 
       <Section title="Justificativa">
-        <p className="text-sm text-fg whitespace-pre-wrap">{ticket.justificativa || "—"}</p>
+        <div className="flex items-start gap-2">
+          <p className="min-w-0 text-sm text-fg whitespace-pre-wrap break-words">{ticket.justificativa || "—"}</p>
+          {ticket.justificativa && (
+            <CopyButton id={`${ticket.id}:justificativa`} value={ticket.justificativa} label="Justificativa" />
+          )}
+        </div>
       </Section>
 
       <Section title="Linha do tempo">

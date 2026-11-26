@@ -6,11 +6,13 @@ import { dateOnly, todayStr } from "../../lib/dates";
 import { maskCpf } from "../../lib/format";
 import { useUsers } from "../../hooks/useUsers";
 import { useAuth } from "../../context/AuthContext";
+import { CourseSelect } from "./CourseSelect";
 
 interface Props {
   ticketExistente?: Ticket | null;
   onSubmit: (data: TicketFormData) => Promise<void>;
   onCancel: () => void;
+  onCourseRenamed: () => void;
 }
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
@@ -26,7 +28,7 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
 }
 
 /** Formulário de cadastro/edição — só campos e envio; o "casco" (modal) fica em TicketFormModal. */
-export function TicketForm({ ticketExistente: t, onSubmit, onCancel }: Props) {
+export function TicketForm({ ticketExistente: t, onSubmit, onCancel, onCourseRenamed }: Props) {
   const users = useUsers();
   const { user } = useAuth();
   const [form, setForm] = useState<TicketFormData>({
@@ -185,7 +187,7 @@ export function TicketForm({ ticketExistente: t, onSubmit, onCancel }: Props) {
           </select>
         </Field>
         <Field label="Curso" className="col-span-2">
-          <input value={form.curso} onChange={(e) => set("curso", e.target.value)} className={inputClass} />
+          <CourseSelect value={form.curso} onChange={(v) => set("curso", v)} onRenamed={onCourseRenamed} />
         </Field>
         <Field label="Justificativa" className="col-span-2">
           <textarea

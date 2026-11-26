@@ -5,6 +5,7 @@ import authRoutes from "./routes/auth.routes";
 import ticketRoutes from "./routes/ticket.routes";
 import userRoutes from "./routes/user.routes";
 import taskRoutes from "./routes/task.routes";
+import courseRoutes from "./routes/course.routes";
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/courses", courseRoutes);
 
 // Handler de erro genérico
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

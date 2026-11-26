@@ -13,7 +13,7 @@ import { BulkDeleteDialog } from "../components/tickets/BulkDeleteDialog";
 import { TicketFormModal } from "../components/tickets/TicketFormModal";
 
 export function Chamados() {
-  const { tickets, carregando, erro, criar, editar, alternarConclusao, excluir, excluirEmLote } =
+  const { tickets, carregando, erro, recarregar, criar, editar, alternarConclusao, excluir, excluirEmLote } =
     useTickets();
   const { user } = useAuth();
   const users = useUsers();
@@ -168,6 +168,7 @@ export function Chamados() {
         <TicketFormModal
           ticketExistente={emEdicao}
           onClose={() => setModalAberto(false)}
+          onCourseRenamed={recarregar}
           onSubmit={(data) => (emEdicao ? editar(emEdicao.id, data) : criar(data))}
         />
       )}

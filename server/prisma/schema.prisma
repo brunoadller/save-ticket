@@ -85,6 +85,16 @@ model Ticket {
   @@map("tickets")
 }
 
+// Cursos do select de chamados. O chamado guarda o nome como texto (Ticket.curso).
+model Course {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("courses")
+}
+
 // Tarefas do calendário (compartilhadas pela equipe). "data" é só o dia (sem horário).
 model Task {
   id          String    @id @default(uuid())
