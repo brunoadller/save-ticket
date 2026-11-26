@@ -13,7 +13,7 @@ import { BulkDeleteDialog } from "../components/tickets/BulkDeleteDialog";
 import { TicketFormModal } from "../components/tickets/TicketFormModal";
 
 export function Chamados() {
-  const { tickets, carregando, erro, criar, editar, concluir, reabrir, excluir, excluirEmLote } =
+  const { tickets, carregando, erro, criar, editar, alternarConclusao, excluir, excluirEmLote } =
     useTickets();
   const { user } = useAuth();
   const users = useUsers();
@@ -76,6 +76,14 @@ export function Chamados() {
     setModalAberto(true);
   }
 
+  async function handleToggleConcluido(t: Ticket) {
+    try {
+      await alternarConclusao(t);
+    } catch (err: any) {
+      alert(err.response?.data?.error || `Não foi possível atualizar o chamado de ${t.nomeAluno}. A alteração foi desfeita.`);
+    }
+  }
+
   async function handleExcluir(t: Ticket) {
     if (!confirm(`Excluir o chamado de ${t.nomeAluno}?`)) return;
     try {
@@ -136,7 +144,7 @@ export function Chamados() {
           setEmEdicao(t);
           setModalAberto(true);
         }}
-        onToggleConcluido={(t) => (t.status === "CONCLUIDO" ? reabrir(t.id) : concluir(t.id))}
+        onToggleConcluido={handleToggleConcluido}
         onExcluir={handleExcluir}
       />
 

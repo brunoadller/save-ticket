@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import api from "../api/axios";
+import { dateOnly, todayStr } from "../lib/dates";
 import { Ticket, TicketFormData } from "../types";
 
 /** Converte os campos "vazios" do formulário em null para a API. */
@@ -10,6 +11,13 @@ function toPayload(data: Partial<TicketFormData>) {
     ...(situacaoAtual !== undefined ? { situacaoAtual: situacaoAtual || null } : {}),
     ...(assignedToId !== undefined ? { assignedToId: assignedToId || null } : {}),
   };
+}
+
+/** Como o chamado deve ficar após o clique, antes de a API responder. */
+function toggleStatus(t: Ticket): Ticket {
+  if (t.status !== "CONCLUIDO") return { ...t, status: "CONCLUIDO", dataConclusao: todayStr() };
+  const expirado = dateOnly(t.dataPrazo) < todayStr();
+  return { ...t, status: expirado ? "EXPIRADO" : "ANDAMENTO", dataConclusao: null };
 }
 
 export function useTickets() {
@@ -41,14 +49,46 @@ export function useTickets() {
     await api.patch(`/tickets/${id}`, toPayload(data));
     await carregar();
   };
-  const concluir = async (id: string) => {
-    await api.patch(`/tickets/${id}`, { status: "CONCLUIDO" });
-    await carregar();
+  // Trocas de status ainda não confirmadas pela API, por chamado
+  const pendentes = useRef(new Map<string, { fila: Promise<void>; ultima: number; confirmado: Ticket }>());
+
+  const substituir = (novo: Ticket) => setTickets((prev) => prev.map((t) => (t.id === novo.id ? novo : t)));
+
+  /**
+   * Conclui ou reabre com atualização otimista: a tela muda na hora e a API é chamada em segundo plano.
+   * Se a última troca falhar, o chamado volta ao estado confirmado e o erro é repassado.
+   */
+  const alternarConclusao = async (ticket: Ticket) => {
+    const { id } = ticket;
+    const otimista = toggleStatus(ticket);
+    const item = pendentes.current.get(id) ?? { fila: Promise.resolve(), ultima: 0, confirmado: ticket };
+    pendentes.current.set(id, item);
+    const vez = ++item.ultima;
+    substituir(otimista);
+
+    // Em fila: cliques seguidos no mesmo chamado chegam à API na ordem em que foram feitos
+    const envio = item.fila.then(async () => {
+      const status = otimista.status === "CONCLUIDO" ? "CONCLUIDO" : "ANDAMENTO";
+      const { data } = await api.patch<Ticket>(`/tickets/${id}`, { status });
+      item.confirmado = data;
+    });
+    item.fila = envio.catch(() => {});
+
+    try {
+      await envio;
+    } catch (err) {
+      if (vez === item.ultima) {
+        substituir(item.confirmado);
+        carregar(); // a API pode ter gravado mesmo sem a resposta chegar
+        throw err;
+      }
+    } finally {
+      // Só a resposta do último clique mexe na tela, para não "piscar" com um estado antigo
+      if (vez === item.ultima) pendentes.current.delete(id);
+    }
+    if (vez === item.ultima) substituir(item.confirmado);
   };
-  const reabrir = async (id: string) => {
-    await api.patch(`/tickets/${id}`, { status: "ANDAMENTO" });
-    await carregar();
-  };
+
   const excluir = async (id: string) => {
     await api.delete(`/tickets/${id}`);
     await carregar();
@@ -70,5 +110,5 @@ export function useTickets() {
     return total;
   };
 
-  return { tickets, carregando, erro, criar, editar, concluir, reabrir, excluir, excluirEmLote };
+  return { tickets, carregando, erro, criar, editar, alternarConclusao, excluir, excluirEmLote };
 }
